@@ -72,7 +72,7 @@
 
   .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
 
-  #map { flex: 1; background: #0a0c12; }
+  #map { flex: 1; height: 100%; background: #0a0c12; }
 
   /* Leaflet popup */
   .leaflet-popup-content-wrapper {
@@ -160,7 +160,7 @@
     </div>
   </div>
 
-  <div style="position:relative;flex:1;">
+  <div style="position:relative;flex:1;display:flex;flex-direction:column;">
     <div id="loading-overlay" class="loading-overlay">
       <div class="spinner"></div>
       <div class="loading-text">Loading map…</div>
@@ -194,10 +194,11 @@ const IMG_W = 1625, IMG_H = 1042;
 
 const map = L.map('map', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 4, zoomSnap: 0.25 });
 const bounds = [[0,0],[IMG_H,IMG_W]];
-L.imageOverlay(IMG_URL, bounds).addTo(map);
+const overlay = L.imageOverlay(IMG_URL, bounds).addTo(map);
 map.fitBounds(bounds);
 
-document.getElementById('loading-overlay').style.display = 'none';
+overlay.on('load', () => { document.getElementById('loading-overlay').style.display = 'none'; });
+overlay.on('error', () => { document.getElementById('loading-overlay').style.display = 'none'; });
 
 // ── Load config (script URL) from localStorage ────
 function loadConfig() {}
