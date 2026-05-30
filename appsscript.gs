@@ -48,7 +48,7 @@ function getAllNodes(sheet) {
     if (!id) continue;
     nodes.push({
       id,
-      intensity: String(row[intCol] || 'none').trim().toLowerCase(),
+      intensity: String(row[intCol] || 'None').trim(),
       lat: parseFloat(row[latCol]) || 0,
       lng: parseFloat(row[lngCol]) || 0,
     });

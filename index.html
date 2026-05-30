@@ -147,7 +147,7 @@
   }
   .intensity-btn:hover { border-color: var(--text-dim); color: var(--text); }
   .intensity-btn.active { color: #fff; }
-  .intensity-btn[data-val="none"].active { background: var(--none-color); border-color: var(--none-color); }
+  .intensity-btn[data-val="None"].active { background: var(--none-color); border-color: var(--none-color); }
   .intensity-btn[data-val="light"].active { background: var(--light-color); border-color: var(--light-color); color: #111; }
   .intensity-btn[data-val="medium"].active { background: var(--medium-color); border-color: var(--medium-color); }
   .intensity-btn[data-val="extreme"].active { background: var(--extreme-color); border-color: var(--extreme-color); }
@@ -271,10 +271,10 @@
     <div class="modal-field">
       <label>Intensity</label>
       <div class="intensity-grid">
-        <button class="intensity-btn active" data-val="none">None</button>
-        <button class="intensity-btn" data-val="light">Light</button>
-        <button class="intensity-btn" data-val="medium">Medium</button>
-        <button class="intensity-btn" data-val="extreme">Extreme</button>
+        <button class="intensity-btn active" data-val="None">None</button>
+        <button class="intensity-btn" data-val="Light">Light</button>
+        <button class="intensity-btn" data-val="Medium">Medium</button>
+        <button class="intensity-btn" data-val="Extreme">Extreme</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -295,7 +295,7 @@
 // ─────────────────────────────────────────────
 const CONFIG_KEY = 'compoundmap_config';
 const INTENSITY_COLORS = {
-  none: '#6b7494', light: '#f0c040', medium: '#f07030', extreme: '#e03040'
+  None: '#6b7494', Light: '#f0c040', Medium: '#f07030', Extreme: '#e03040'
 };
 
 let nodes = [];
@@ -344,7 +344,7 @@ map.on('mousemove', function(e) {
 // MARKERS
 // ─────────────────────────────────────────────
 function intensityColor(intensity) {
-  return INTENSITY_COLORS[intensity] || INTENSITY_COLORS.none;
+  return INTENSITY_COLORS[intensity] || INTENSITY_COLORS.None;
 }
 
 function makeIcon(node) {
@@ -422,7 +422,7 @@ function panToNode(id) {
 // MODAL
 // ─────────────────────────────────────────────
 const modal = document.getElementById('modal');
-let selectedIntensity = 'none';
+let selectedIntensity = 'None';
 
 function nextAvailableId() {
   const used = new Set(nodes.map(n => n.id));
@@ -438,7 +438,7 @@ function openModal(node) {
   document.getElementById('modal-delete').style.display = node ? 'block' : 'none';
   document.getElementById('id-error').classList.remove('show');
   document.getElementById('modal-id').classList.remove('error');
-  selectedIntensity = node ? node.intensity : 'none';
+  selectedIntensity = node ? node.intensity : 'None';
   document.querySelectorAll('.intensity-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.val === selectedIntensity);
   });
@@ -550,7 +550,7 @@ function pushNode(node) {
   const params = new URLSearchParams({
     action: 'set',
     id: node.id,
-    intensity: node.intensity || 'none',
+    intensity: node.intensity || 'None',
     lat: node.lat,
     lng: node.lng
   });
