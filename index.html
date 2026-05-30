@@ -350,7 +350,9 @@ function addMarker(node) {
 
   marker.on('dragend', function(e) {
     const ll = e.target.getLatLng();
-    const n = nodes.find(x => x.id === node.id);
+    // Use marker reference to find current id in case node was renamed
+    const currentId = Object.keys(markers).find(k => markers[k] === e.target);
+    const n = nodes.find(x => x.id === parseInt(currentId));
     if (n) { n.lat = ll.lat; n.lng = ll.lng; pushNode(n); }
   });
 
@@ -510,8 +512,19 @@ async function fetchNodes() {
 
 async function pushNode(node) {
   if (!scriptUrl) return;
+  if (!node || !node.id || isNaN(node.lat) || isNaN(node.lng)) {
+    toast('Save failed: invalid node data', 'error'); return;
+  }
+  const params = new URLSearchParams({
+    action: 'set',
+    id: node.id,
+    intensity: node.intensity || 'none',
+    lat: node.lat,
+    lng: node.lng
+  });
   try {
-    await fetch(`${scriptUrl}?action=set&id=${node.id}&intensity=${node.intensity}&lat=${node.lat}&lng=${node.lng}`);
+    const res = await fetch(`${scriptUrl}?${params}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
   } catch(e) { toast('Save failed: ' + e.message, 'error'); }
 }
 
