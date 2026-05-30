@@ -530,7 +530,10 @@ async function fetchNodes() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    nodes = data;
+    nodes = data.map(n => ({
+      ...n,
+      intensity: n.intensity ? n.intensity.charAt(0).toUpperCase() + n.intensity.slice(1).toLowerCase() : 'None'
+    }));
     renderAllMarkers();
     const now = new Date().toLocaleTimeString();
     setSyncStatus('ok', `Loaded at ${now}`);
