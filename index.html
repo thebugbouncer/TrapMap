@@ -523,15 +523,14 @@ async function pushNode(node) {
     lng: node.lng
   });
   try {
-    const res = await fetch(`${scriptUrl}?${params}`);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    await fetch(`${scriptUrl}?${params}`, { mode: 'no-cors' });
   } catch(e) { toast('Save failed: ' + e.message, 'error'); }
 }
 
 async function deleteNode(id) {
   if (!scriptUrl) return;
   try {
-    await fetch(`${scriptUrl}?action=delete&id=${id}`);
+    await fetch(`${scriptUrl}?action=delete&id=${id}`, { mode: 'no-cors' });
   } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
 }
 
