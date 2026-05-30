@@ -510,11 +510,14 @@ async function fetchNodes() {
   }
 }
 
-async function pushNode(node) {
-  if (!scriptUrl) return;
-  if (!node || !node.id || isNaN(node.lat) || isNaN(node.lng)) {
-    toast('Save failed: invalid node data', 'error'); return;
-  }
+function fireAndForget(url) {
+  // Image requests bypass CORS entirely — Apps Script processes the GET before
+  // the browser notices the response isn't an image.
+  new Image().src = url;
+}
+
+function pushNode(node) {
+  if (!scriptUrl || !node || !node.id || isNaN(node.lat) || isNaN(node.lng)) return;
   const params = new URLSearchParams({
     action: 'set',
     id: node.id,
@@ -522,16 +525,12 @@ async function pushNode(node) {
     lat: node.lat,
     lng: node.lng
   });
-  try {
-    await fetch(`${scriptUrl}?${params}`, { mode: 'no-cors' });
-  } catch(e) { toast('Save failed: ' + e.message, 'error'); }
+  fireAndForget(`${scriptUrl}?${params}`);
 }
 
-async function deleteNode(id) {
+function deleteNode(id) {
   if (!scriptUrl) return;
-  try {
-    await fetch(`${scriptUrl}?action=delete&id=${id}`, { mode: 'no-cors' });
-  } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
+  fireAndForget(`${scriptUrl}?action=delete&id=${id}`);
 }
 
 // ─────────────────────────────────────────────
