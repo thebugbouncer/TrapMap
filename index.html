@@ -600,11 +600,16 @@ document.getElementById('btn-save-all').onclick = async function() {
   if (!nodes.length) { toast('No traps to save', ''); return; }
   this.disabled = true;
   try {
-    const params = new URLSearchParams({ action: 'saveAll', data: JSON.stringify(nodes) });
-    await fetch(`${scriptUrl}?${params}`);
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify(nodes)
+    });
     stampSaved();
     toast(`Saved ${nodes.length} trap${nodes.length !== 1 ? 's' : ''}`, 'success');
-  } catch(e) { /* CORS blocks response but write already happened */ stampSaved(); toast(`Saved ${nodes.length} trap${nodes.length !== 1 ? 's' : ''}`, 'success'); }
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
   this.disabled = false;
 };
 
