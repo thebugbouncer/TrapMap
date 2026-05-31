@@ -49,11 +49,10 @@
 
   /* Legend panel */
   .legend-panel {
-    width: 200px; background: var(--surface); border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; flex-shrink: 0; padding: 0;
-    gap: 0;
+    width: 280px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; padding: 16px;
+    gap: 6px;
   }
-  .legend-content { padding: 16px; display: flex; flex-direction: column; gap: 6px; }
   .legend-label-header {
     font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
@@ -137,25 +136,25 @@
 
 <div class="main">
   <div class="legend-panel">
-    <div class="legend-content">
-      <div class="legend-label-header">Summary</div>
-      <div class="count-grid">
-        <div class="count-card"><div class="count-num" id="cnt-none" style="color:var(--none-color)">0</div><div class="count-lbl">None</div></div>
-        <div class="count-card"><div class="count-num" id="cnt-light" style="color:var(--light-color)">0</div><div class="count-lbl">Light</div></div>
-        <div class="count-card"><div class="count-num" id="cnt-medium" style="color:var(--medium-color)">0</div><div class="count-lbl">Medium</div></div>
-        <div class="count-card"><div class="count-num" id="cnt-extreme" style="color:var(--extreme-color)">0</div><div class="count-lbl">Extreme</div></div>
-      </div>
-
-      <hr class="divider"/>
-
-      <div class="legend-label-header">Legend</div>
-      <div class="legend-row"><div class="legend-dot" style="background:var(--none-color)"></div><span class="legend-text">None</span></div>
-      <div class="legend-row"><div class="legend-dot" style="background:var(--light-color)"></div><span class="legend-text">Light</span></div>
-      <div class="legend-row"><div class="legend-dot" style="background:var(--medium-color)"></div><span class="legend-text">Medium</span></div>
-      <div class="legend-row"><div class="legend-dot" style="background:var(--extreme-color)"></div><span class="legend-text">Extreme</span></div>
+    <div class="legend-label-header">Summary</div>
+    <div class="count-grid">
+      <div class="count-card"><div class="count-num" id="cnt-none" style="color:var(--none-color)">0</div><div class="count-lbl">None</div></div>
+      <div class="count-card"><div class="count-num" id="cnt-light" style="color:var(--light-color)">0</div><div class="count-lbl">Light</div></div>
+      <div class="count-card"><div class="count-num" id="cnt-medium" style="color:var(--medium-color)">0</div><div class="count-lbl">Medium</div></div>
+      <div class="count-card"><div class="count-num" id="cnt-extreme" style="color:var(--extreme-color)">0</div><div class="count-lbl">Extreme</div></div>
     </div>
 
-    <img src="https://raw.githubusercontent.com/levialmanzar/TrapMap/main/Assets/Images/bug-bouncer-logo.png" style="width:100%;margin-top:auto;display:block;" />
+    <hr class="divider"/>
+
+    <div class="legend-label-header">Legend</div>
+    <div class="legend-row"><div class="legend-dot" style="background:var(--none-color)"></div><span class="legend-text">None</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:var(--light-color)"></div><span class="legend-text">Light</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:var(--medium-color)"></div><span class="legend-text">Medium</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:var(--extreme-color)"></div><span class="legend-text">Extreme</span></div>
+
+    <div style="margin-top:auto;">
+      <img src="https://raw.githubusercontent.com/levialmanzar/TrapMap/main/Assets/Images/bug-bouncer-logo.png" style="width:100%;opacity:0.85;" />
+    </div>
   </div>
 
   <div style="position:relative;flex:1;display:flex;flex-direction:column;">
