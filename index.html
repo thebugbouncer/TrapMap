@@ -482,6 +482,7 @@ document.getElementById('modal-save').onclick = function() {
     const n = nodes.find(x => x.id === editingId);
     if (n) {
       removeMarker(editingId);
+      if (newId !== editingId) deleteNode(editingId);
       n.id = newId; n.intensity = selectedIntensity;
       delete markers[editingId];
       addMarker(n);
