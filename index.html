@@ -401,7 +401,7 @@ function renderAllMarkers() {
 // SIDEBAR
 // ─────────────────────────────────────────────
 function updateSidebar() {
-  const list = document.getElementById('node-list');
+  const list = document.getElementById('trap-list');
   const sorted = [...nodes].sort((a,b) => a.id - b.id);
   list.innerHTML = sorted.map(n => `
     <div class="trap-item" onclick="panToNode(${n.id})">
