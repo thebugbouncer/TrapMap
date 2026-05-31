@@ -229,8 +229,8 @@ function renderAllMarkers() {
 }
 
 function updateCounts() {
-  ['none','light','medium','extreme'].forEach(k => {
-    document.getElementById('cnt-' + k).textContent = nodes.filter(n => n.intensity === k).length;
+  ['None','Light','Medium','Extreme'].forEach(k => {
+    document.getElementById('cnt-' + k.toLowerCase()).textContent = nodes.filter(n => n.intensity === k).length;
   });
 }
 
