@@ -148,9 +148,9 @@
   .intensity-btn:hover { border-color: var(--text-dim); color: var(--text); }
   .intensity-btn.active { color: #fff; }
   .intensity-btn[data-val="None"].active { background: var(--none-color); border-color: var(--none-color); }
-  .intensity-btn[data-val="light"].active { background: var(--light-color); border-color: var(--light-color); color: #111; }
-  .intensity-btn[data-val="medium"].active { background: var(--medium-color); border-color: var(--medium-color); }
-  .intensity-btn[data-val="extreme"].active { background: var(--extreme-color); border-color: var(--extreme-color); }
+  .intensity-btn[data-val="Light"].active { background: var(--light-color); border-color: var(--light-color); color: #111; }
+  .intensity-btn[data-val="Medium"].active { background: var(--medium-color); border-color: var(--medium-color); }
+  .intensity-btn[data-val="Extreme"].active { background: var(--extreme-color); border-color: var(--extreme-color); }
   .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
   .modal-actions button { flex: 1; padding: 9px; }
 
@@ -201,6 +201,16 @@
   .config-input:focus { border-color: var(--accent); }
 
   .dragging-cursor { cursor: grabbing !important; }
+
+  @media (max-width: 600px) {
+    .sidebar { display: none; }
+    header { padding: 0 12px; height: 44px; }
+    .logo { font-size: 12px; }
+    .header-actions button { font-size: 10px; padding: 5px 10px; }
+    .statusbar { padding: 0 10px; gap: 10px; }
+    .status-item { font-size: 9px; }
+    .modal { width: calc(100vw - 32px); padding: 18px; }
+  }
 </style>
 </head>
 <body>

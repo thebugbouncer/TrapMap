@@ -51,7 +51,7 @@
   .legend-panel {
     width: 280px; background: var(--surface); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; flex-shrink: 0; padding: 16px;
-    gap: 6px;
+    gap: 6px; overflow-y: auto;
   }
   .legend-label-header {
     font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.14em;
@@ -111,6 +111,16 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.success { border-color: #40d080; color: #40d080; }
   .toast.error { border-color: var(--extreme-color); color: var(--extreme-color); }
+
+  @media (max-width: 600px) {
+    .legend-panel { width: 140px; padding: 10px; font-size: 11px; }
+    .count-num { font-size: 16px; }
+    .count-lbl { font-size: 8px; }
+    header { padding: 0 12px; height: 44px; }
+    .logo { font-size: 12px; }
+    .statusbar { padding: 0 10px; gap: 8px; }
+    .status-item { font-size: 9px; }
+  }
 
   .loading-overlay {
     position: absolute; inset: 0; background: rgba(10,12,18,0.92);
