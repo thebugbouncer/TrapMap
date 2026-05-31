@@ -31,6 +31,29 @@ function doGet(e) {
       deleteNode(sheet, id);
       return jsonResponse({ ok: true });
     }
+    if (action === 'saveAll') {
+      const traps = JSON.parse(e.parameter.data);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const h = headers.map(x => String(x).trim().toLowerCase());
+      const idCol  = h.indexOf('id');
+      const intCol = h.findIndex(x => x.includes('intensity'));
+      const latCol = h.indexOf('lat');
+      const lngCol = h.indexOf('lng');
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
+      if (traps.length > 0) {
+        const rows = traps.map(n => {
+          const row = new Array(headers.length).fill('');
+          row[idCol]  = n.id;
+          row[intCol] = toTitleCase(n.intensity);
+          row[latCol] = n.lat;
+          row[lngCol] = n.lng;
+          return row;
+        });
+        sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+      }
+      return jsonResponse({ ok: true });
+    }
 
     return jsonResponse({ error: 'Unknown action' });
   } catch(err) {
@@ -38,41 +61,6 @@ function doGet(e) {
   }
 }
 
-function doPost(e) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_NAME);
-    const traps = JSON.parse(e.postData.contents);
-
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    const h = headers.map(x => String(x).trim().toLowerCase());
-    const idCol  = h.indexOf('id');
-    const intCol = h.findIndex(x => x.includes('intensity'));
-    const latCol = h.indexOf('lat');
-    const lngCol = h.indexOf('lng');
-
-    // Clear all data rows, keep header
-    const lastRow = sheet.getLastRow();
-    if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
-
-    // Batch write all traps in one call
-    if (traps.length > 0) {
-      const rows = traps.map(n => {
-        const row = new Array(headers.length).fill('');
-        row[idCol]  = n.id;
-        row[intCol] = toTitleCase(n.intensity);
-        row[latCol] = n.lat;
-        row[lngCol] = n.lng;
-        return row;
-      });
-      sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
-    }
-
-    return jsonResponse({ ok: true });
-  } catch(err) {
-    return jsonResponse({ error: err.toString() });
-  }
-}
 
 function toTitleCase(str) {
   if (!str) return 'None';
