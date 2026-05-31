@@ -329,8 +329,9 @@ map.fitBounds(bounds);
 
 // Click map to place node
 map.on('click', function(e) {
-  // Don't fire if clicking a marker
   if (e.originalEvent._fromMarker) return;
+  const { lat, lng } = e.latlng;
+  if (lat < 0 || lat > IMG_H || lng < 0 || lng > IMG_W) return;
   pendingLatLng = e.latlng;
   editingId = null;
   openModal(null);
