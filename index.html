@@ -70,20 +70,20 @@
     font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px;
   }
-  .node-list { flex: 1; overflow-y: auto; padding: 8px; }
-  .node-list::-webkit-scrollbar { width: 4px; }
-  .node-list::-webkit-scrollbar-track { background: transparent; }
-  .node-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .trap-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .trap-list::-webkit-scrollbar { width: 4px; }
+  .trap-list::-webkit-scrollbar-track { background: transparent; }
+  .trap-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-  .node-item {
+  .trap-item {
     display: flex; align-items: center; gap: 10px; padding: 8px 10px;
     border-radius: 6px; cursor: pointer; transition: background 0.1s; margin-bottom: 2px;
   }
-  .node-item:hover { background: var(--surface2); }
-  .node-item.selected { background: rgba(79,142,247,0.1); border: 1px solid rgba(79,142,247,0.3); }
-  .node-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-  .node-id { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; flex: 1; }
-  .node-intensity { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+  .trap-item:hover { background: var(--surface2); }
+  .trap-item.selected { background: rgba(79,142,247,0.1); border: 1px solid rgba(79,142,247,0.3); }
+  .trap-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .trap-id { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; flex: 1; }
+  .trap-intensity { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
 
   /* Legend */
   .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
@@ -227,7 +227,7 @@
     <!-- Instructions -->
     <div class="sidebar-section">
       <div class="sidebar-label">Instructions</div>
-      <p class="tip"><strong>Click map</strong> to place a node<br><strong>Drag</strong> to reposition<br><strong>Click node</strong> to edit or delete</p>
+      <p class="tip"><strong>Click map</strong> to place a trap<br><strong>Drag</strong> to reposition<br><strong>Click trap</strong> to edit or delete</p>
     </div>
 
     <!-- Legend -->
@@ -239,9 +239,9 @@
       <div class="legend-row"><div class="legend-dot" style="background:var(--extreme-color)"></div><span class="legend-label">Extreme</span></div>
     </div>
 
-    <!-- Node list -->
-    <div class="sidebar-label" style="padding:12px 16px 4px;">Nodes <span id="node-count" style="color:var(--accent)">0</span></div>
-    <div class="node-list" id="node-list"></div>
+    <!-- Trap list -->
+    <div class="sidebar-label" style="padding:12px 16px 4px;">Traps <span id="trap-count" style="color:var(--accent)">0</span></div>
+    <div class="trap-list" id="trap-list"></div>
   </div>
 
   <div style="position:relative;flex:1;display:flex;flex-direction:column;">
@@ -254,17 +254,17 @@
 </div>
 
 <div class="statusbar">
-  <div class="status-item">Nodes: <span id="sb-count">0</span></div>
+  <div class="status-item">Traps: <span id="sb-count">0</span></div>
   <div class="status-item">Last sync: <span id="sb-sync">—</span></div>
-  <div class="status-item" id="sb-coords" style="margin-left:auto;">Click map to place node</div>
+  <div class="status-item" id="sb-coords" style="margin-left:auto;">Click map to place trap</div>
 </div>
 
 <!-- Node Edit Modal -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
-    <h3 id="modal-title">New Node</h3>
+    <h3 id="modal-title">New Trap</h3>
     <div class="modal-field">
-      <label>Node ID (number)</label>
+      <label>Trap ID (number)</label>
       <input type="number" id="modal-id" min="1" placeholder="e.g. 42" />
       <div class="error-msg" id="id-error">This ID already exists</div>
     </div>
@@ -281,7 +281,7 @@
       <button class="btn-ghost" id="modal-cancel">Cancel</button>
       <button class="btn-danger" id="modal-delete" style="display:none">Delete</button>
       <button class="btn-danger" id="modal-delete-confirm" style="display:none">Confirm Delete</button>
-      <button class="btn-primary" id="modal-save">Save Node</button>
+      <button class="btn-primary" id="modal-save">Save Trap</button>
     </div>
   </div>
 </div>
@@ -404,13 +404,13 @@ function updateSidebar() {
   const list = document.getElementById('node-list');
   const sorted = [...nodes].sort((a,b) => a.id - b.id);
   list.innerHTML = sorted.map(n => `
-    <div class="node-item" onclick="panToNode(${n.id})">
-      <div class="node-dot" style="background:${intensityColor(n.intensity)}"></div>
-      <span class="node-id">#${n.id}</span>
-      <span class="node-intensity">${n.intensity}</span>
+    <div class="trap-item" onclick="panToNode(${n.id})">
+      <div class="trap-dot" style="background:${intensityColor(n.intensity)}"></div>
+      <span class="trap-id">#${n.id}</span>
+      <span class="trap-intensity">${n.intensity}</span>
     </div>
   `).join('');
-  document.getElementById('node-count').textContent = nodes.length;
+  document.getElementById('trap-count').textContent = nodes.length;
   document.getElementById('sb-count').textContent = nodes.length;
 }
 
@@ -434,7 +434,7 @@ function nextAvailableId() {
 
 function openModal(node) {
   modal.classList.add('open');
-  document.getElementById('modal-title').textContent = node ? `Edit Node #${node.id}` : 'New Node';
+  document.getElementById('modal-title').textContent = node ? `Edit Trap #${node.id}` : 'New Trap';
   document.getElementById('modal-id').value = node ? node.id : nextAvailableId();
   document.getElementById('modal-delete').style.display = node ? 'block' : 'none';
   document.getElementById('id-error').classList.remove('show');
@@ -502,7 +502,7 @@ document.getElementById('modal-save').onclick = function() {
   }
 
   updateSidebar(); closeModal();
-  toast(`Node #${newId} saved`, 'success');
+  toast(`Trap #${newId} saved`, 'success');
 };
 
 document.getElementById('modal-delete').onclick = function() {
@@ -517,7 +517,7 @@ document.getElementById('modal-delete-confirm').onclick = function() {
   removeMarker(id);
   deleteNode(id);
   updateSidebar(); closeModal();
-  toast(`Node #${id} deleted`, 'success');
+  toast(`Trap #${id} deleted`, 'success');
 };
 
 // ─────────────────────────────────────────────
@@ -549,7 +549,7 @@ async function fetchNodes() {
     const now = new Date().toLocaleTimeString();
     setSyncStatus('ok', `Loaded at ${now}`);
     document.getElementById('sb-sync').textContent = now;
-    toast(`Loaded ${nodes.length} node${nodes.length !== 1 ? 's' : ''}`, 'success');
+    toast(`Loaded ${nodes.length} trap${nodes.length !== 1 ? 's' : ''}`, 'success');
   } catch(e) {
     setSyncStatus('err', 'Load failed');
     toast('Load failed: ' + e.message, 'error');
