@@ -255,7 +255,7 @@
 
 <div class="statusbar">
   <div class="status-item">Traps: <span id="sb-count">0</span></div>
-  <div class="status-item">Last sync: <span id="sb-sync">—</span></div>
+  <div class="status-item">Last saved: <span id="sb-sync">—</span></div>
   <div class="status-item" id="sb-coords" style="margin-left:auto;">Click map to place trap</div>
 </div>
 
@@ -376,7 +376,7 @@ function addMarker(node) {
     // Use marker reference to find current id in case node was renamed
     const currentId = Object.keys(markers).find(k => markers[k] === e.target);
     const n = nodes.find(x => x.id === parseInt(currentId));
-    if (n) { n.lat = ll.lat; n.lng = ll.lng; pushNode(n); toast(`Trap #${n.id} saved`, 'success'); }
+    if (n) { n.lat = ll.lat; n.lng = ll.lng; pushNode(n); stampSaved(); toast(`Trap #${n.id} saved`, 'success'); }
   });
 
   markers[node.id] = marker;
@@ -502,6 +502,7 @@ document.getElementById('modal-save').onclick = function() {
   }
 
   updateSidebar(); closeModal();
+  stampSaved();
   toast(`Trap #${newId} saved`, 'success');
 };
 
@@ -556,6 +557,10 @@ async function fetchNodes() {
   } finally {
     hideLoadingOverlay();
   }
+}
+
+function stampSaved() {
+  document.getElementById('sb-sync').textContent = new Date().toLocaleTimeString();
 }
 
 async function pushNode(node) {
