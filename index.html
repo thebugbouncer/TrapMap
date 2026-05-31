@@ -280,6 +280,7 @@
     <div class="modal-actions">
       <button class="btn-ghost" id="modal-cancel">Cancel</button>
       <button class="btn-danger" id="modal-delete" style="display:none">Delete</button>
+      <button class="btn-danger" id="modal-delete-confirm" style="display:none">Confirm Delete</button>
       <button class="btn-primary" id="modal-save">Save Node</button>
     </div>
   </div>
@@ -449,7 +450,12 @@ function openModal(node) {
   });
 }
 
-function closeModal() { modal.classList.remove('open'); }
+function closeModal() {
+  modal.classList.remove('open');
+  document.getElementById('modal-delete-confirm').style.display = 'none';
+  document.getElementById('modal-delete').style.display = 'none';
+  document.getElementById('modal-save').style.display = 'block';
+}
 
 document.getElementById('modal-cancel').onclick = closeModal;
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
@@ -500,7 +506,12 @@ document.getElementById('modal-save').onclick = function() {
 };
 
 document.getElementById('modal-delete').onclick = function() {
-  if (!confirm(`Delete node #${editingId}?`)) return;
+  document.getElementById('modal-delete').style.display = 'none';
+  document.getElementById('modal-delete-confirm').style.display = 'block';
+  document.getElementById('modal-save').style.display = 'none';
+};
+
+document.getElementById('modal-delete-confirm').onclick = function() {
   const id = editingId;
   nodes = nodes.filter(n => n.id !== id);
   removeMarker(id);
