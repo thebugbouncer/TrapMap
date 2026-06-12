@@ -150,17 +150,17 @@
     <div class="count-grid">
       <div class="count-card"><div class="count-num" id="cnt-none" style="color:var(--none-color)">0</div><div class="count-lbl">None</div></div>
       <div class="count-card"><div class="count-num" id="cnt-light" style="color:var(--light-color)">0</div><div class="count-lbl">Light</div></div>
-      <div class="count-card"><div class="count-num" id="cnt-medium" style="color:var(--medium-color)">0</div><div class="count-lbl">Medium</div></div>
-      <div class="count-card"><div class="count-num" id="cnt-extreme" style="color:var(--extreme-color)">0</div><div class="count-lbl">Extreme</div></div>
+      <div class="count-card"><div class="count-num" id="cnt-moderate" style="color:var(--medium-color)">0</div><div class="count-lbl">Moderate</div></div>
+      <div class="count-card"><div class="count-num" id="cnt-heavy" style="color:var(--extreme-color)">0</div><div class="count-lbl">Heavy</div></div>
     </div>
 
     <hr class="divider"/>
 
-    <div class="legend-label-header">Legend</div>
+    <div class="legend-label-header">Activity Levels</div>
     <div class="legend-row"><div class="legend-dot" style="background:var(--none-color)"></div><span class="legend-text">None</span></div>
     <div class="legend-row"><div class="legend-dot" style="background:var(--light-color)"></div><span class="legend-text">Light</span></div>
-    <div class="legend-row"><div class="legend-dot" style="background:var(--medium-color)"></div><span class="legend-text">Medium</span></div>
-    <div class="legend-row"><div class="legend-dot" style="background:var(--extreme-color)"></div><span class="legend-text">Extreme</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:var(--medium-color)"></div><span class="legend-text">Moderate</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:var(--extreme-color)"></div><span class="legend-text">Heavy</span></div>
 
     <div style="margin-top:auto;">
       <img src="https://raw.githubusercontent.com/levialmanzar/TrapMap/main/Assets/Images/bug-bouncer-logo.png" style="width:100%;opacity:0.85;" />
@@ -188,8 +188,20 @@
 const STORAGE_KEY = 'compoundmap_nodes';
 const CONFIG_KEY  = 'compoundmap_config';
 const INTENSITY_COLORS = {
-  None: '#40d080', Light: '#f0c040', Medium: '#f07030', Extreme: '#e03040'
+  None: '#40d080', Light: '#f0c040', Moderate: '#f07030', Heavy: '#e03040'
 };
+
+// Sheet data may hold numeric levels (0-3) or any casing
+const INTENSITY_LEVELS = ['None', 'Light', 'Moderate', 'Heavy'];
+const LEGACY_INTENSITY = { Medium: 'Moderate', Extreme: 'Heavy' };
+function normalizeIntensity(val) {
+  if (val === undefined || val === null || val === '') return 'None';
+  const s = String(val).trim();
+  if (INTENSITY_LEVELS[Number(s)] !== undefined && s !== '' && !isNaN(s)) return INTENSITY_LEVELS[Number(s)];
+  const cap = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  if (LEGACY_INTENSITY[cap]) return LEGACY_INTENSITY[cap];
+  return INTENSITY_LEVELS.includes(cap) ? cap : 'None';
+}
 
 let nodes = [];
 let markers = {};
@@ -223,7 +235,7 @@ function makeIcon(node) {
 }
 
 function intensityBadgeStyle(intensity) {
-  const colors = { none: '#6b7494', light: '#c09020', medium: '#c05010', extreme: '#b02030' };
+  const colors = { none: '#6b7494', light: '#c09020', moderate: '#c05010', heavy: '#b02030' };
   return `background:${colors[intensity] || '#6b7494'}`;
 }
 
@@ -239,7 +251,7 @@ function renderAllMarkers() {
 }
 
 function updateCounts() {
-  ['None','Light','Medium','Extreme'].forEach(k => {
+  ['None','Light','Moderate','Heavy'].forEach(k => {
     document.getElementById('cnt-' + k.toLowerCase()).textContent = nodes.filter(n => n.intensity === k).length;
   });
 }
@@ -252,10 +264,7 @@ async function fetchNodes() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    nodes = data.map(n => ({
-      ...n,
-      intensity: n.intensity ? n.intensity.charAt(0).toUpperCase() + n.intensity.slice(1).toLowerCase() : 'None'
-    }));
+    nodes = data.map(n => ({ ...n, intensity: normalizeIntensity(n.intensity) }));
     renderAllMarkers();
     document.getElementById('sb-sync').textContent = new Date().toLocaleTimeString();
   } catch(e) {

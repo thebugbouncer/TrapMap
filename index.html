@@ -149,8 +149,8 @@
   .intensity-btn.active { color: #fff; }
   .intensity-btn[data-val="None"].active { background: var(--none-color); border-color: var(--none-color); }
   .intensity-btn[data-val="Light"].active { background: var(--light-color); border-color: var(--light-color); color: #111; }
-  .intensity-btn[data-val="Medium"].active { background: var(--medium-color); border-color: var(--medium-color); }
-  .intensity-btn[data-val="Extreme"].active { background: var(--extreme-color); border-color: var(--extreme-color); }
+  .intensity-btn[data-val="Moderate"].active { background: var(--medium-color); border-color: var(--medium-color); }
+  .intensity-btn[data-val="Heavy"].active { background: var(--extreme-color); border-color: var(--extreme-color); }
   .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
   .modal-actions button { flex: 1; padding: 9px; }
 
@@ -268,12 +268,12 @@
       <div class="error-msg" id="id-error">This ID already exists</div>
     </div>
     <div class="modal-field">
-      <label>Intensity</label>
+      <label>Activity Level</label>
       <div class="intensity-grid">
         <button class="intensity-btn active" data-val="None">None</button>
         <button class="intensity-btn" data-val="Light">Light</button>
-        <button class="intensity-btn" data-val="Medium">Medium</button>
-        <button class="intensity-btn" data-val="Extreme">Extreme</button>
+        <button class="intensity-btn" data-val="Moderate">Moderate</button>
+        <button class="intensity-btn" data-val="Heavy">Heavy</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -295,7 +295,7 @@
 // ─────────────────────────────────────────────
 const CONFIG_KEY = 'compoundmap_config';
 const INTENSITY_COLORS = {
-  None: '#40d080', Light: '#f0c040', Medium: '#f07030', Extreme: '#e03040'
+  None: '#40d080', Light: '#f0c040', Moderate: '#f07030', Heavy: '#e03040'
 };
 
 let nodes = [];
@@ -344,6 +344,18 @@ map.on('mousemove', function(e) {
 // ─────────────────────────────────────────────
 // MARKERS
 // ─────────────────────────────────────────────
+// Sheet data may hold legacy numeric levels (0-3) or any casing
+const INTENSITY_LEVELS = ['None', 'Light', 'Moderate', 'Heavy'];
+const LEGACY_INTENSITY = { Medium: 'Moderate', Extreme: 'Heavy' };
+function normalizeIntensity(val) {
+  if (val === undefined || val === null || val === '') return 'None';
+  const s = String(val).trim();
+  if (INTENSITY_LEVELS[Number(s)] !== undefined && s !== '' && !isNaN(s)) return INTENSITY_LEVELS[Number(s)];
+  const cap = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  if (LEGACY_INTENSITY[cap]) return LEGACY_INTENSITY[cap];
+  return INTENSITY_LEVELS.includes(cap) ? cap : 'None';
+}
+
 function intensityColor(intensity) {
   return INTENSITY_COLORS[intensity] || INTENSITY_COLORS.None;
 }
@@ -442,12 +454,7 @@ function openModal(node) {
   document.getElementById('modal-delete').style.display = node ? 'block' : 'none';
   document.getElementById('id-error').classList.remove('show');
   document.getElementById('modal-id').classList.remove('error');
-  if (node && node.intensity) {
-    const i = node.intensity;
-    selectedIntensity = i.charAt(0).toUpperCase() + i.slice(1).toLowerCase();
-  } else {
-    selectedIntensity = 'None';
-  }
+  selectedIntensity = normalizeIntensity(node && node.intensity);
   document.querySelectorAll('.intensity-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.val === selectedIntensity);
   });
@@ -546,10 +553,7 @@ async function fetchNodes() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    nodes = data.map(n => ({
-      ...n,
-      intensity: n.intensity ? n.intensity.charAt(0).toUpperCase() + n.intensity.slice(1).toLowerCase() : 'None'
-    }));
+    nodes = data.map(n => ({ ...n, intensity: normalizeIntensity(n.intensity) }));
     renderAllMarkers();
     const now = new Date().toLocaleTimeString();
     setSyncStatus('ok', `Loaded at ${now}`);
@@ -572,7 +576,7 @@ async function pushNode(node) {
   const params = new URLSearchParams({
     action: 'set',
     id: node.id,
-    intensity: node.intensity || 'None',
+    intensity: INTENSITY_LEVELS.indexOf(normalizeIntensity(node.intensity)),
     lat: node.lat,
     lng: node.lng
   });

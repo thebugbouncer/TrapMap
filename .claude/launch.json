@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "trapmap",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-p", "8080", "/Users/leviticusalmanzar/Documents/TrapMap"],
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd /tmp/trapmap-preview && exec /usr/bin/python3 server.py"],
       "port": 8080
     }
   ]

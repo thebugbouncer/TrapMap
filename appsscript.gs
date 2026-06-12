@@ -5,9 +5,28 @@
 //
 // Your sheet must have this header row (row 1):
 //   ID | Intensity | Lat | Lng
+//
+// Intensity is stored as a number: 0=None, 1=Light, 2=Medium, 3=Extreme
 
 const SHEET_NAME = 'Sheet1';
 
+// ── Intensity conversions ────────────────────────────────────────────────────
+const INTENSITY_TEXT_TO_NUM = { none: 0, light: 1, medium: 2, extreme: 3 };
+const INTENSITY_NUM_TO_TEXT = { 0: 'None', 1: 'Light', 2: 'Medium', 3: 'Extreme' };
+
+function intensityToNum(str) {
+  if (str === null || str === undefined || str === '') return 0;
+  const n = parseInt(str);
+  if (!isNaN(n) && INTENSITY_NUM_TO_TEXT[n] !== undefined) return n; // already a number
+  return INTENSITY_TEXT_TO_NUM[String(str).toLowerCase().trim()] ?? 0;
+}
+
+function intensityToText(val) {
+  const n = parseInt(val);
+  return INTENSITY_NUM_TO_TEXT[isNaN(n) ? 0 : n] ?? 'None';
+}
+
+// ── Main handler ─────────────────────────────────────────────────────────────
 function doGet(e) {
   try {
     const action = e.parameter.action;
@@ -19,7 +38,7 @@ function doGet(e) {
     }
     if (action === 'set') {
       const id        = parseInt(e.parameter.id);
-      const intensity = toTitleCase(e.parameter.intensity);
+      const intensity = intensityToNum(e.parameter.intensity);
       const lat       = parseFloat(e.parameter.lat);
       const lng       = parseFloat(e.parameter.lng);
       if (!id || isNaN(lat) || isNaN(lng)) return jsonResponse({ error: 'Invalid params' });
@@ -37,13 +56,7 @@ function doGet(e) {
   }
 }
 
-
-
-function toTitleCase(str) {
-  if (!str) return 'None';
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
-
+// ── Sheet helpers ─────────────────────────────────────────────────────────────
 function getAllNodes(sheet) {
   const data = sheet.getDataRange().getValues();
   const headers = data[0].map(h => String(h).trim().toLowerCase());
@@ -58,7 +71,7 @@ function getAllNodes(sheet) {
     if (!id) continue;
     nodes.push({
       id,
-      intensity: toTitleCase(String(row[intCol] || 'None').trim()),
+      intensity: intensityToText(row[intCol]),  // return text to the UI
       lat: parseFloat(row[latCol]) || 0,
       lng: parseFloat(row[lngCol]) || 0,
     });
@@ -76,7 +89,6 @@ function upsertNode(sheet, id, intensity, lat, lng) {
 
   for (let i = 1; i < data.length; i++) {
     if (parseInt(data[i][idCol]) === id) {
-      // Delete and re-append to bypass any cell-level data validation
       sheet.deleteRow(i + 1);
       break;
     }
@@ -84,7 +96,7 @@ function upsertNode(sheet, id, intensity, lat, lng) {
 
   const newRow = new Array(headers.length).fill('');
   newRow[idCol]  = id;
-  newRow[intCol] = intensity;
+  newRow[intCol] = intensity;  // numeric value (0–3)
   newRow[latCol] = lat;
   newRow[lngCol] = lng;
   sheet.appendRow(newRow);
