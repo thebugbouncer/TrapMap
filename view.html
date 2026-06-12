@@ -148,6 +148,7 @@
   <div class="legend-panel">
     <div class="legend-label-header">Summary</div>
     <div class="count-grid">
+      <div class="count-card" style="grid-column:1 / -1;"><div class="count-num" id="cnt-total">0</div><div class="count-lbl">Total Traps</div></div>
       <div class="count-card"><div class="count-num" id="cnt-none" style="color:var(--none-color)">0</div><div class="count-lbl">None</div></div>
       <div class="count-card"><div class="count-num" id="cnt-light" style="color:var(--light-color)">0</div><div class="count-lbl">Light</div></div>
       <div class="count-card"><div class="count-num" id="cnt-moderate" style="color:var(--medium-color)">0</div><div class="count-lbl">Moderate</div></div>
@@ -251,6 +252,7 @@ function renderAllMarkers() {
 }
 
 function updateCounts() {
+  document.getElementById('cnt-total').textContent = nodes.length;
   ['None','Light','Moderate','Heavy'].forEach(k => {
     document.getElementById('cnt-' + k.toLowerCase()).textContent = nodes.filter(n => n.intensity === k).length;
   });
