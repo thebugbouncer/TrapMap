@@ -92,19 +92,30 @@ function upsertNode(sheet, id, intensity, lat, lng) {
   const data = sheet.getDataRange().getValues();
   const { count, idCol, intCol, latCol, lngCol } = getCols(data);
 
+  // Writes only the four known cells so any extra columns are left untouched
+  function writeRow(rowIndex) {
+    sheet.getRange(rowIndex, idCol + 1).setValue(id);
+    sheet.getRange(rowIndex, intCol + 1).setValue(intensity);  // numeric value (0–3)
+    sheet.getRange(rowIndex, latCol + 1).setValue(lat);
+    sheet.getRange(rowIndex, lngCol + 1).setValue(lng);
+  }
+
+  // Existing trap: update its row in place
   for (let i = 1; i < data.length; i++) {
     if (parseInt(data[i][idCol]) === id) {
-      sheet.deleteRow(i + 1);
-      break;
+      writeRow(i + 1);
+      return;
     }
   }
 
-  const newRow = new Array(count).fill('');
-  newRow[idCol]  = id;
-  newRow[intCol] = intensity;  // numeric value (0–3)
-  newRow[latCol] = lat;
-  newRow[lngCol] = lng;
-  sheet.appendRow(newRow);
+  // New trap: insert at the numerically sorted position by Trap ID
+  let insertAt = data.length + 1;
+  for (let i = 1; i < data.length; i++) {
+    const rowId = parseInt(data[i][idCol]);
+    if (!isNaN(rowId) && rowId > id) { insertAt = i + 1; break; }
+  }
+  sheet.insertRowBefore(insertAt);
+  writeRow(insertAt);
 }
 
 function deleteNode(sheet, id) {
