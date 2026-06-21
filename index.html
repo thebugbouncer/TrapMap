@@ -113,6 +113,34 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-text { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
 
+  /* ── PIN gate ── */
+  .pin-gate {
+    position: fixed; inset: 0; z-index: 10000;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(10,12,18,0.55);
+    backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+    transition: opacity 0.3s;
+  }
+  .pin-gate.hidden { opacity: 0; pointer-events: none; }
+  .pin-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px 26px; width: 280px; text-align: center;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  }
+  .pin-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .pin-card p { font-size: 12px; color: var(--text-dim); margin-bottom: 18px; }
+  .pin-input {
+    width: 100%; box-sizing: border-box; background: var(--bg);
+    border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 22px;
+    letter-spacing: 0.4em; text-align: center; outline: none; transition: border-color 0.15s;
+  }
+  .pin-input:focus { border-color: var(--accent); }
+  .pin-input.error { border-color: var(--extreme-color); animation: shake 0.3s; }
+  .pin-error { font-size: 11px; color: var(--extreme-color); margin-top: 10px; height: 14px; }
+  .pin-error.checking { color: var(--text-dim); }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+
   /* ── Popup / Modal ── */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9000;
@@ -215,6 +243,15 @@
 </head>
 <body>
 
+<div id="pin-gate" class="pin-gate">
+  <div class="pin-card">
+    <h3>Editor Locked</h3>
+    <p>Enter the PIN to edit the map.</p>
+    <input id="pin-input" class="pin-input" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••" />
+    <div id="pin-error" class="pin-error"></div>
+  </div>
+</div>
+
 <header>
   <div class="logo">Amerige Heights <span>Trap Map</span></div>
   <div class="mode-badge">Edit Mode</div>
@@ -240,7 +277,7 @@
     <div class="trap-list" id="trap-list"></div>
 
     <div style="padding:16px;margin-top:auto;">
-      <img src="https://raw.githubusercontent.com/thebugbouncer/TrapMap/main/Assets/Images/bug-bouncer-logo.png" style="width:100%;opacity:0.85;" />
+      <img src="Assets/Images/bug-bouncer-logo.png" style="width:100%;opacity:0.85;" />
     </div>
   </div>
 
@@ -312,7 +349,7 @@ function loadConfig() {}
 // ─────────────────────────────────────────────
 // We use CRS.Simple with a large imaginary bounds.
 // Swap in your real image by changing IMG_URL and IMG_BOUNDS.
-const IMG_URL = 'https://raw.githubusercontent.com/thebugbouncer/TrapMap/main/Assets/Images/AMERIGE_HEIGHTS_COMMUNITY.jpg';
+const IMG_URL = 'Assets/Images/AMERIGE_HEIGHTS_COMMUNITY.jpg';
 const IMG_W = 1625, IMG_H = 1042;
 
 const map = L.map('map', {
@@ -578,7 +615,8 @@ async function pushNode(node) {
     id: node.id,
     intensity: INTENSITY_LEVELS.indexOf(normalizeIntensity(node.intensity)),
     lat: node.lat,
-    lng: node.lng
+    lng: node.lng,
+    pin: getEditPin()
   });
   try {
     await fetch(`${scriptUrl}?${params}`);
@@ -588,7 +626,7 @@ async function pushNode(node) {
 async function deleteNode(id) {
   if (!scriptUrl) return;
   try {
-    await fetch(`${scriptUrl}?action=delete&id=${id}`);
+    await fetch(`${scriptUrl}?action=delete&id=${id}&pin=${encodeURIComponent(getEditPin())}`);
   } catch(e) { /* same as above */ }
 }
 
@@ -624,6 +662,64 @@ if (scriptUrl) {
 } else {
   setSyncStatus('', 'Paste Script URL and save');
 }
+
+// ─────────────────────────────────────────────
+// EDITOR PIN GATE
+// The PIN is validated server-side by Apps Script (action=auth), which
+// checks it against the EDIT_PIN Script Property. Nothing about the PIN
+// lives in this file or the public repo. On success the entered PIN is
+// kept in sessionStorage and attached to every save/delete, so writes are
+// also enforced server-side — not just the UI. The map loads behind the gate.
+// ─────────────────────────────────────────────
+function getEditPin() { return sessionStorage.getItem('trapmap_pin') || ''; }
+
+(function() {
+  const SESSION_KEY = 'trapmap_editor_unlocked';
+  const gate  = document.getElementById('pin-gate');
+  const input = document.getElementById('pin-input');
+  const errEl = document.getElementById('pin-error');
+
+  function unlock() { gate.classList.add('hidden'); }
+  if (sessionStorage.getItem(SESSION_KEY) === '1') { unlock(); return; }
+
+  input.focus();
+  let checking = false;
+
+  async function check() {
+    const val = input.value.trim();
+    if (!val || checking) return;
+    checking = true;
+    errEl.textContent = 'Checking…';
+    errEl.classList.add('checking');
+    try {
+      const res = await fetch(`${scriptUrl}?action=auth&pin=${encodeURIComponent(val)}`);
+      const data = await res.json();
+      if (data.ok) {
+        sessionStorage.setItem(SESSION_KEY, '1');
+        sessionStorage.setItem('trapmap_pin', val);
+        unlock();
+      } else {
+        errEl.classList.remove('checking');
+        input.classList.add('error');
+        errEl.textContent = 'Incorrect PIN';
+        input.value = '';
+        setTimeout(() => input.classList.remove('error'), 400);
+      }
+    } catch (err) {
+      errEl.classList.remove('checking');
+      errEl.textContent = 'Connection error — try again';
+    } finally {
+      checking = false;
+    }
+  }
+
+  input.addEventListener('input', () => {
+    if (checking) return;
+    errEl.textContent = '';
+    if (input.value.length >= 4) check();  // current PIN is 4 digits
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+})();
 </script>
 </body>
 </html>

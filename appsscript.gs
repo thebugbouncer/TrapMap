@@ -27,6 +27,18 @@ function intensityToText(val) {
   return INTENSITY_NUM_TO_TEXT[isNaN(n) ? 0 : n] ?? 'None';
 }
 
+// ── Edit PIN ─────────────────────────────────────────────────────────────────
+// The real secret lives in Script Properties (File > Project Settings >
+// Script Properties), NOT in this file or the public repo. Set a property
+// named EDIT_PIN to the desired code (e.g. 0806). Reads (action=get) stay open;
+// writes (set/delete) require the matching pin. If EDIT_PIN is unset, writes
+// are allowed (so editing keeps working until you opt in by setting it).
+function isAuthorized(e) {
+  const required = PropertiesService.getScriptProperties().getProperty('EDIT_PIN');
+  if (!required) return true;  // no pin configured yet → don't block
+  return String(e.parameter.pin || '') === String(required);
+}
+
 // ── Main handler ─────────────────────────────────────────────────────────────
 function doGet(e) {
   try {
@@ -37,7 +49,11 @@ function doGet(e) {
     if (action === 'get') {
       return jsonResponse(getAllNodes(sheet));
     }
+    if (action === 'auth') {
+      return jsonResponse({ ok: isAuthorized(e) });
+    }
     if (action === 'set') {
+      if (!isAuthorized(e)) return jsonResponse({ error: 'Unauthorized' });
       const id        = parseInt(e.parameter.id);
       const intensity = intensityToNum(e.parameter.intensity);
       const lat       = parseFloat(e.parameter.lat);
@@ -47,6 +63,7 @@ function doGet(e) {
       return jsonResponse({ ok: true });
     }
     if (action === 'delete') {
+      if (!isAuthorized(e)) return jsonResponse({ error: 'Unauthorized' });
       const id = parseInt(e.parameter.id);
       deleteNode(sheet, id);
       return jsonResponse({ ok: true });
