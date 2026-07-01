@@ -1,0 +1,104 @@
+/* Shared styles for the editor (index.html) and client map (view.html).
+   Load this before each page's own <style> block so page-specific rules
+   can override anything here. Keep page-only UI (sidebar, modal, PIN gate,
+   legend panel, etc.) in that page's own <style> — this file is only for
+   rules that are identical, or meant to be identical, across both pages. */
+
+:root {
+  --bg: #0f1117;
+  --surface: #181c27;
+  --surface2: #1f2535;
+  --border: #2a3047;
+  --accent: #4f8ef7;
+  --accent2: #7c3aed;
+  --text: #e8eaf0;
+  --text-dim: #6b7494;
+  --none-color: #40d080;
+  --light-color: #f0c040;
+  --medium-color: #f07030;
+  --extreme-color: #e03040;
+  --panel-w: 280px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Header */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 52px; background: var(--surface);
+  border-bottom: 1px solid var(--border); flex-shrink: 0; z-index: 1000;
+}
+.logo { font-size: 15px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+.logo span { color: var(--accent); }
+
+/* Buttons */
+button {
+  font-family: 'Syne', sans-serif; font-weight: 600; font-size: 12px;
+  letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+  border: none; border-radius: 6px; padding: 7px 14px; transition: all 0.15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #6fa0ff; transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+.btn-danger { background: rgba(224,48,64,0.15); color: var(--extreme-color); border: 1px solid rgba(224,48,64,0.3); }
+.btn-danger:hover { background: rgba(224,48,64,0.3); }
+.btn-success { background: rgba(40,200,100,0.15); color: #40d080; border: 1px solid rgba(40,200,100,0.3); }
+.btn-success:hover { background: rgba(40,200,100,0.3); }
+button:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+/* Layout */
+.main { display: flex; flex: 1; overflow: hidden; }
+#map { flex: 1; height: 100%; background: #0a0c12; }
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute; inset: 0; background: rgba(10,12,18,0.92);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500; flex-direction: column; gap: 14px;
+  transition: opacity 0.4s;
+}
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.spinner {
+  width: 32px; height: 32px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+
+/* Status bar */
+.statusbar {
+  height: 28px; background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 16px; gap: 16px; flex-shrink: 0;
+}
+.status-item { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 0.08em; }
+.status-item span { color: var(--text); }
+
+/* Sync indicator */
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); display: inline-block; margin-right: 5px; }
+.sync-dot.ok { background: #40d080; }
+.sync-dot.err { background: var(--extreme-color); }
+.sync-dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 18px; font-size: 13px; z-index: 9999; opacity: 0;
+  transition: all 0.25s; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: #40d080; color: #40d080; }
+.toast.error { border-color: var(--extreme-color); color: var(--extreme-color); }
+
+/* Leaflet popup base look — page-specific popup content styles
+   (.popup-id, .popup-intensity, etc.) live in each page's own <style> */
+.leaflet-popup-content-wrapper {
+  background: var(--surface) !important; border: 1px solid var(--border) !important;
+  border-radius: 8px !important; box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+  color: var(--text) !important;
+}
+.leaflet-popup-tip { background: var(--surface) !important; }
+.leaflet-popup-content { margin: 14px 16px !important; font-family: 'Syne', sans-serif; }

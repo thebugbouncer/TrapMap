@@ -7,58 +7,14 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-  :root {
-    --bg: #0f1117;
-    --surface: #181c27;
-    --surface2: #1f2535;
-    --border: #2a3047;
-    --accent: #4f8ef7;
-    --accent2: #7c3aed;
-    --text: #e8eaf0;
-    --text-dim: #6b7494;
-    --none-color: #40d080;
-    --light-color: #f0c040;
-    --medium-color: #f07030;
-    --extreme-color: #e03040;
-    --panel-w: 280px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-  /* ── Header ── */
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 20px; height: 52px; background: var(--surface);
-    border-bottom: 1px solid var(--border); flex-shrink: 0; z-index: 1000;
-  }
-  .logo { font-size: 15px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
-  .logo span { color: var(--accent); }
   .mode-badge {
     font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.12em;
     text-transform: uppercase; padding: 3px 10px; border-radius: 4px;
     background: rgba(79,142,247,0.15); color: var(--accent); border: 1px solid rgba(79,142,247,0.3);
   }
   .header-actions { display: flex; gap: 8px; align-items: center; }
-
-  /* ── Buttons ── */
-  button {
-    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 12px;
-    letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
-    border: none; border-radius: 6px; padding: 7px 14px; transition: all 0.15s;
-  }
-  .btn-primary { background: var(--accent); color: #fff; }
-  .btn-primary:hover { background: #6fa0ff; transform: translateY(-1px); }
-  .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
-  .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
-  .btn-danger { background: rgba(224,48,64,0.15); color: var(--extreme-color); border: 1px solid rgba(224,48,64,0.3); }
-  .btn-danger:hover { background: rgba(224,48,64,0.3); }
-  .btn-success { background: rgba(40,200,100,0.15); color: #40d080; border: 1px solid rgba(40,200,100,0.3); }
-  .btn-success:hover { background: rgba(40,200,100,0.3); }
-  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
-
-  /* ── Layout ── */
-  .main { display: flex; flex: 1; overflow: hidden; }
 
   /* ── Sidebar ── */
   .sidebar {
@@ -84,34 +40,6 @@
   .trap-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .trap-id { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; flex: 1; }
   .trap-intensity { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
-
-  /* Legend */
-  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .legend-label { font-size: 12px; color: var(--text-dim); }
-
-  /* Instructions */
-  .tip { font-size: 11px; color: var(--text-dim); line-height: 1.6; }
-  .tip strong { color: var(--text); }
-
-  /* ── Map ── */
-  #map { flex: 1; height: 100%; background: #0a0c12; }
-
-  /* ── Loading overlay ── */
-  .loading-overlay {
-    position: absolute; inset: 0; background: rgba(10,12,18,0.92);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 500; flex-direction: column; gap: 14px;
-    transition: opacity 0.4s;
-  }
-  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
-  .spinner {
-    width: 32px; height: 32px; border: 3px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
 
   /* ── PIN gate ── */
   .pin-gate {
@@ -183,52 +111,10 @@
   .modal-actions button { flex: 1; padding: 9px; }
 
   /* Node popup on map */
-  .leaflet-popup-content-wrapper {
-    background: var(--surface) !important; border: 1px solid var(--border) !important;
-    border-radius: 8px !important; box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
-    color: var(--text) !important;
-  }
-  .leaflet-popup-tip { background: var(--surface) !important; }
-  .leaflet-popup-content { margin: 14px 16px !important; font-family: 'Syne', sans-serif; }
   .popup-id { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
   .popup-intensity { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'DM Mono', monospace; margin-bottom: 12px; }
   .popup-actions { display: flex; gap: 6px; }
   .popup-actions button { font-size: 10px; padding: 5px 10px; }
-
-  /* Status bar */
-  .statusbar {
-    height: 28px; background: var(--surface); border-top: 1px solid var(--border);
-    display: flex; align-items: center; padding: 0 16px; gap: 16px; flex-shrink: 0;
-  }
-  .status-item { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 0.08em; }
-  .status-item span { color: var(--text); }
-
-  /* Toast */
-  .toast {
-    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px);
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-    padding: 10px 18px; font-size: 13px; z-index: 9999; opacity: 0;
-    transition: all 0.25s; pointer-events: none; white-space: nowrap;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .toast.success { border-color: #40d080; color: #40d080; }
-  .toast.error { border-color: var(--extreme-color); color: var(--extreme-color); }
-
-  /* Sync indicator */
-  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); display: inline-block; margin-right: 5px; }
-  .sync-dot.ok { background: #40d080; }
-  .sync-dot.err { background: var(--extreme-color); }
-  .sync-dot.loading { background: var(--accent); animation: pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  .config-input {
-    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-    padding: 7px 10px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px;
-    outline: none; transition: border-color 0.15s; margin-top: 6px;
-  }
-  .config-input:focus { border-color: var(--accent); }
-
-  .dragging-cursor { cursor: grabbing !important; }
 
   @media (max-width: 600px) {
     .sidebar { display: none; }
@@ -331,42 +217,20 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="shared.js"></script>
 <script>
 // ─────────────────────────────────────────────
-// CONFIG & STATE
+// STATE
 // ─────────────────────────────────────────────
-const CONFIG_KEY = 'compoundmap_config';
-const INTENSITY_COLORS = {
-  None: '#40d080', Light: '#f0c040', Moderate: '#f07030', Heavy: '#e03040'
-};
-
 let nodes = [];
 let markers = {};
 let editingId = null;
 let pendingLatLng = null;
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbyIwaoWbDzwdTkr4XpQBxb1vSeZ9x361JdAoxagH5Y6ZkaPcONfimDh4Yl179FOv_wuLw/exec';
-
-function saveConfig() {}
-function loadConfig() {}
 
 // ─────────────────────────────────────────────
 // MAP INIT
 // ─────────────────────────────────────────────
-// We use CRS.Simple with a large imaginary bounds.
-// Swap in your real image by changing IMG_URL and IMG_BOUNDS.
-const IMG_URL = 'Assets/Images/AMERIGE_HEIGHTS_COMMUNITY.jpg';
-const IMG_W = 1625, IMG_H = 1042;
-
-const map = L.map('map', {
-  crs: L.CRS.Simple,
-  minZoom: -2,
-  maxZoom: 4,
-  zoomSnap: 0.25,
-});
-
-const bounds = [[0,0],[IMG_H, IMG_W]];
-L.imageOverlay(IMG_URL, bounds).addTo(map);
-map.fitBounds(bounds);
+const { map } = createTrapMap('map');
 
 // Click map to place node
 map.on('click', function(e) {
@@ -386,64 +250,11 @@ map.on('mousemove', function(e) {
 // ─────────────────────────────────────────────
 // MARKERS
 // ─────────────────────────────────────────────
-// Sheet data may hold legacy numeric levels (0-3) or any casing
-const INTENSITY_LEVELS = ['None', 'Light', 'Moderate', 'Heavy'];
-const LEGACY_INTENSITY = { Medium: 'Moderate', Extreme: 'Heavy' };
-function normalizeIntensity(val) {
-  if (val === undefined || val === null || val === '') return 'None';
-  const s = String(val).trim();
-  if (INTENSITY_LEVELS[Number(s)] !== undefined && s !== '' && !isNaN(s)) return INTENSITY_LEVELS[Number(s)];
-  const cap = s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-  if (LEGACY_INTENSITY[cap]) return LEGACY_INTENSITY[cap];
-  return INTENSITY_LEVELS.includes(cap) ? cap : 'None';
-}
-
-function intensityColor(intensity) {
-  return INTENSITY_COLORS[intensity] || INTENSITY_COLORS.None;
-}
-
-// Marker size: user-adjustable via the sidebar slider (persisted per device);
-// falls back to a smaller default on phones so icons don't clump.
-function getMarkerSize() {
-  const saved = parseInt(localStorage.getItem('trapmap_marker_px'), 10);
-  if (Number.isFinite(saved)) return saved;
-  return window.matchMedia('(max-width: 700px)').matches ? 20 : 36;
-}
-
-function makeIcon(node) {
-  const color = intensityColor(node.intensity);
-  const sz = getMarkerSize();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${sz}" viewBox="0 0 36 36">
-    <circle cx="18" cy="18" r="15" fill="${color}" stroke="#fff" stroke-width="2.5" opacity="0.92"/>
-    <text x="18" y="23" text-anchor="middle" font-size="12" font-weight="700" font-family="Syne,sans-serif" fill="#fff">${node.id}</text>
-  </svg>`;
-  return L.divIcon({
-    html: svg, className: '', iconSize: [sz,sz], iconAnchor: [sz/2,sz/2], popupAnchor: [0,-sz*0.55]
-  });
-}
-
 // Resize existing markers in place (no re-add, so popups/drag state survive)
 function applyMarkerSize() {
   nodes.forEach(n => { if (markers[n.id]) markers[n.id].setIcon(makeIcon(n)); });
 }
-
-(function initMarkerSlider() {
-  const el = document.getElementById('marker-size');
-  if (!el) return;
-  el.value = getMarkerSize();
-  el.addEventListener('input', () => {
-    localStorage.setItem('trapmap_marker_px', el.value);
-    applyMarkerSize();
-  });
-})();
-
-// Follow the responsive default across breakpoint changes, unless the user set a size
-window.addEventListener('resize', () => {
-  if (localStorage.getItem('trapmap_marker_px') !== null) return;
-  const el = document.getElementById('marker-size');
-  if (el) el.value = getMarkerSize();
-  applyMarkerSize();
-});
+initMarkerSizeSlider(applyMarkerSize);
 
 function addMarker(node) {
   const marker = L.marker([node.lat, node.lng], {
@@ -474,10 +285,6 @@ function addMarker(node) {
 
 function removeMarker(id) {
   if (markers[id]) { map.removeLayer(markers[id]); delete markers[id]; }
-}
-
-function refreshMarkerIcon(node) {
-  if (markers[node.id]) markers[node.id].setIcon(makeIcon(node));
 }
 
 function renderAllMarkers() {
@@ -614,59 +421,11 @@ function setSyncStatus(state, msg) {
   document.getElementById('sync-status').textContent = msg;
 }
 
-function hideLoadingOverlay() {
-  const el = document.getElementById('loading-overlay');
-  if (el) el.classList.add('hidden');
-}
-
-// Resolve duplicate trap IDs: keep the first occurrence under its original ID.
-// A later duplicate at the SAME position is a harmless accidental repeat and
-// is dropped. A later duplicate at a DIFFERENT position is real data (someone
-// placed a new trap and it collided with an existing ID) — give it a fresh,
-// unused ID instead of losing it. Returns the resolved list plus a list of
-// fixes so the caller can persist them back to the sheet.
-function resolveDuplicates(list) {
-  const groups = new Map();
-  list.forEach(n => {
-    if (!groups.has(n.id)) groups.set(n.id, []);
-    groups.get(n.id).push(n);
-  });
-
-  const usedIds = new Set(list.map(n => n.id));
-  let nextCandidate = 1;  // fill the lowest open ID first (e.g. reuse a gap left by a deleted trap)
-  function allocateId() {
-    while (usedIds.has(nextCandidate)) nextCandidate++;
-    usedIds.add(nextCandidate);
-    return nextCandidate;
-  }
-
-  const resolved = [];
-  const fixes = [];  // { staleId, renamedTo? }  — staleId's row must be removed from the sheet
-
-  groups.forEach((entries, id) => {
-    resolved.push(entries[0]);  // canonical: first occurrence keeps its ID
-    for (let i = 1; i < entries.length; i++) {
-      const dup = entries[i];
-      const samePos = Math.abs(dup.lat - entries[0].lat) < 0.01 && Math.abs(dup.lng - entries[0].lng) < 0.01;
-      if (samePos) {
-        fixes.push({ staleId: id });  // exact repeat, nothing to keep
-      } else {
-        const newId = allocateId();
-        const renamed = { ...dup, id: newId };
-        resolved.push(renamed);
-        fixes.push({ staleId: id, renamedTo: renamed });
-      }
-    }
-  });
-
-  return { resolved, fixes };
-}
-
 // Ask the server to atomically replace a stale duplicate row's ID with a new
 // one (delete + insert happen in a single locked Apps Script execution, so a
 // second request can't land in between and see a half-finished state).
 async function renameNode(oldId, node) {
-  if (!scriptUrl) return;
+  if (!SCRIPT_URL) return;
   const params = new URLSearchParams({
     action: 'rename',
     oldId: oldId,
@@ -677,7 +436,7 @@ async function renameNode(oldId, node) {
     pin: getEditPin()
   });
   try {
-    await fetch(`${scriptUrl}?${params}`);
+    await fetch(`${SCRIPT_URL}?${params}`);
   } catch(e) { /* CORS blocks response reading but write already happened */ }
 }
 
@@ -693,14 +452,10 @@ async function persistDuplicateFixes(fixes) {
 }
 
 async function fetchNodes() {
-  if (!scriptUrl) { toast('No Script URL configured', 'error'); hideLoadingOverlay(); return; }
+  if (!SCRIPT_URL) { toast('No Script URL configured', 'error'); hideLoadingOverlay(); return; }
   setSyncStatus('loading', 'Loading…');
   try {
-    const res = await fetch(scriptUrl + '?action=get');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    const mapped = data.map(n => ({ ...n, intensity: normalizeIntensity(n.intensity) }));
+    const mapped = await fetchTrapData(SCRIPT_URL);
     const { resolved, fixes } = resolveDuplicates(mapped);
     nodes = resolved;
     if (fixes.length) {
@@ -729,7 +484,7 @@ function stampSaved() {
 }
 
 async function pushNode(node) {
-  if (!scriptUrl || !node || !node.id || isNaN(node.lat) || isNaN(node.lng)) return;
+  if (!SCRIPT_URL || !node || !node.id || isNaN(node.lat) || isNaN(node.lng)) return;
   const params = new URLSearchParams({
     action: 'set',
     id: node.id,
@@ -739,19 +494,19 @@ async function pushNode(node) {
     pin: getEditPin()
   });
   try {
-    await fetch(`${scriptUrl}?${params}`);
+    await fetch(`${SCRIPT_URL}?${params}`);
   } catch(e) { /* CORS blocks response reading but write already happened */ }
 }
 
 async function deleteNode(id) {
-  if (!scriptUrl) return;
+  if (!SCRIPT_URL) return;
   try {
-    await fetch(`${scriptUrl}?action=delete&id=${id}&pin=${encodeURIComponent(getEditPin())}`);
+    await fetch(`${SCRIPT_URL}?action=delete&id=${id}&pin=${encodeURIComponent(getEditPin())}`);
   } catch(e) { /* same as above */ }
 }
 
 // ─────────────────────────────────────────────
-// CONFIG UI
+// SAVE-ALL BUTTON
 // ─────────────────────────────────────────────
 document.getElementById('btn-save-all').onclick = async function() {
   if (!nodes.length) { toast('No traps to save', ''); return; }
@@ -763,21 +518,9 @@ document.getElementById('btn-save-all').onclick = async function() {
 };
 
 // ─────────────────────────────────────────────
-// TOAST
-// ─────────────────────────────────────────────
-let toastTimer;
-function toast(msg, type = '') {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.className = 'toast show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
-loadConfig();
-if (scriptUrl) {
+if (SCRIPT_URL) {
   fetchNodes();
 } else {
   setSyncStatus('', 'Paste Script URL and save');
@@ -823,7 +566,7 @@ function getEditPin() {
     errEl.textContent = 'Checking…';
     errEl.classList.add('checking');
     try {
-      const res = await fetch(`${scriptUrl}?action=auth&pin=${encodeURIComponent(val)}`);
+      const res = await fetch(`${SCRIPT_URL}?action=auth&pin=${encodeURIComponent(val)}`);
       const data = await res.json();
       if (data.ok) {
         localStorage.setItem(PIN_REMEMBER_KEY, JSON.stringify({ pin: val, expires: Date.now() + PIN_REMEMBER_MS }));
