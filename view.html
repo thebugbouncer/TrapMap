@@ -155,6 +155,11 @@
       <div class="count-card"><div class="count-num" id="cnt-heavy" style="color:var(--extreme-color)">0</div><div class="count-lbl">Heavy</div></div>
     </div>
 
+    <div style="margin-top:24px;">
+      <div class="legend-label-header" style="margin-bottom:8px;">Marker Size</div>
+      <input id="marker-size" type="range" min="12" max="52" step="2" style="width:100%;" />
+    </div>
+
     <div style="margin-top:auto;">
       <img src="Assets/Images/bug-bouncer-logo.png" style="width:100%;opacity:0.85;" />
     </div>
@@ -218,14 +223,46 @@ function hideLoadingOverlay() {
 function loadConfig() {}
 
 // ── Markers ──────────────────────────────────
+// Marker size: user-adjustable via the sidebar slider (persisted per device);
+// falls back to a smaller default on phones so icons don't clump.
+function getMarkerSize() {
+  const saved = parseInt(localStorage.getItem('trapmap_marker_px'), 10);
+  if (Number.isFinite(saved)) return saved;
+  return window.matchMedia('(max-width: 700px)').matches ? 20 : 36;
+}
+
 function makeIcon(node) {
   const color = INTENSITY_COLORS[node.intensity] || INTENSITY_COLORS.none;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+  const sz = getMarkerSize();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${sz}" viewBox="0 0 36 36">
     <circle cx="18" cy="18" r="15" fill="${color}" stroke="#fff" stroke-width="2.5" opacity="0.92"/>
     <text x="18" y="23" text-anchor="middle" font-size="12" font-weight="700" font-family="Syne,sans-serif" fill="#fff">${node.id}</text>
   </svg>`;
-  return L.divIcon({ html: svg, className: '', iconSize: [36,36], iconAnchor: [18,18], popupAnchor: [0,-22] });
+  return L.divIcon({ html: svg, className: '', iconSize: [sz,sz], iconAnchor: [sz/2,sz/2], popupAnchor: [0,-sz*0.55] });
 }
+
+// Resize existing markers in place (no re-add, so popups survive)
+function applyMarkerSize() {
+  nodes.forEach(n => { if (markers[n.id]) markers[n.id].setIcon(makeIcon(n)); });
+}
+
+(function initMarkerSlider() {
+  const el = document.getElementById('marker-size');
+  if (!el) return;
+  el.value = getMarkerSize();
+  el.addEventListener('input', () => {
+    localStorage.setItem('trapmap_marker_px', el.value);
+    applyMarkerSize();
+  });
+})();
+
+// Follow the responsive default across breakpoint changes, unless the user set a size
+window.addEventListener('resize', () => {
+  if (localStorage.getItem('trapmap_marker_px') !== null) return;
+  const el = document.getElementById('marker-size');
+  if (el) el.value = getMarkerSize();
+  applyMarkerSize();
+});
 
 function intensityBadgeStyle(intensity) {
   const colors = { none: '#6b7494', light: '#c09020', moderate: '#c05010', heavy: '#b02030' };
@@ -250,6 +287,42 @@ function updateCounts() {
   });
 }
 
+// Resolve duplicate trap IDs for display: keep the first occurrence under its
+// original ID. A later duplicate at the SAME position is dropped (accidental
+// repeat); a later duplicate at a DIFFERENT position gets a fresh, unused ID
+// so it isn't lost. This is display-only here — the client page has no write
+// access to fix the sheet (that happens in the editor).
+function resolveDuplicates(list) {
+  const groups = new Map();
+  list.forEach(n => {
+    if (!groups.has(n.id)) groups.set(n.id, []);
+    groups.get(n.id).push(n);
+  });
+
+  const usedIds = new Set(list.map(n => n.id));
+  let nextCandidate = 1;  // fill the lowest open ID first (e.g. reuse a gap left by a deleted trap)
+  function allocateId() {
+    while (usedIds.has(nextCandidate)) nextCandidate++;
+    usedIds.add(nextCandidate);
+    return nextCandidate;
+  }
+
+  const resolved = [];
+  let fixCount = 0;
+  groups.forEach((entries, id) => {
+    resolved.push(entries[0]);
+    for (let i = 1; i < entries.length; i++) {
+      const dup = entries[i];
+      const samePos = Math.abs(dup.lat - entries[0].lat) < 0.01 && Math.abs(dup.lng - entries[0].lng) < 0.01;
+      if (samePos) { fixCount++; continue; }
+      resolved.push({ ...dup, id: allocateId() });
+      fixCount++;
+    }
+  });
+
+  return { resolved, fixCount };
+}
+
 // ── Apps Script fetch ─────────────────────────
 async function fetchNodes() {
   if (!sheetUrl) { hideLoadingOverlay(); return; }
@@ -258,7 +331,10 @@ async function fetchNodes() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    nodes = data.map(n => ({ ...n, intensity: normalizeIntensity(n.intensity) }));
+    const mapped = data.map(n => ({ ...n, intensity: normalizeIntensity(n.intensity) }));
+    const { resolved, fixCount } = resolveDuplicates(mapped);
+    nodes = resolved;
+    if (fixCount) console.warn(`Resolved ${fixCount} duplicate trap ID(s) for display`);
     renderAllMarkers();
     document.getElementById('sb-sync').textContent = new Date().toLocaleTimeString();
   } catch(e) {

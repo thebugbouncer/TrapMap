@@ -276,7 +276,12 @@
     <div class="sidebar-label" style="padding:12px 16px 4px;">Traps <span id="trap-count" style="color:var(--accent)">0</span></div>
     <div class="trap-list" id="trap-list"></div>
 
-    <div style="padding:16px;margin-top:auto;">
+    <div style="padding:12px 16px;margin-top:auto;">
+      <div class="sidebar-label" style="margin-bottom:8px;">Marker Size</div>
+      <input id="marker-size" type="range" min="12" max="52" step="2" style="width:100%;" />
+    </div>
+
+    <div style="padding:0 16px 16px;">
       <img src="Assets/Images/bug-bouncer-logo.png" style="width:100%;opacity:0.85;" />
     </div>
   </div>
@@ -397,16 +402,48 @@ function intensityColor(intensity) {
   return INTENSITY_COLORS[intensity] || INTENSITY_COLORS.None;
 }
 
+// Marker size: user-adjustable via the sidebar slider (persisted per device);
+// falls back to a smaller default on phones so icons don't clump.
+function getMarkerSize() {
+  const saved = parseInt(localStorage.getItem('trapmap_marker_px'), 10);
+  if (Number.isFinite(saved)) return saved;
+  return window.matchMedia('(max-width: 700px)').matches ? 20 : 36;
+}
+
 function makeIcon(node) {
   const color = intensityColor(node.intensity);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
+  const sz = getMarkerSize();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${sz}" viewBox="0 0 36 36">
     <circle cx="18" cy="18" r="15" fill="${color}" stroke="#fff" stroke-width="2.5" opacity="0.92"/>
     <text x="18" y="23" text-anchor="middle" font-size="12" font-weight="700" font-family="Syne,sans-serif" fill="#fff">${node.id}</text>
   </svg>`;
   return L.divIcon({
-    html: svg, className: '', iconSize: [36,36], iconAnchor: [18,18], popupAnchor: [0,-20]
+    html: svg, className: '', iconSize: [sz,sz], iconAnchor: [sz/2,sz/2], popupAnchor: [0,-sz*0.55]
   });
 }
+
+// Resize existing markers in place (no re-add, so popups/drag state survive)
+function applyMarkerSize() {
+  nodes.forEach(n => { if (markers[n.id]) markers[n.id].setIcon(makeIcon(n)); });
+}
+
+(function initMarkerSlider() {
+  const el = document.getElementById('marker-size');
+  if (!el) return;
+  el.value = getMarkerSize();
+  el.addEventListener('input', () => {
+    localStorage.setItem('trapmap_marker_px', el.value);
+    applyMarkerSize();
+  });
+})();
+
+// Follow the responsive default across breakpoint changes, unless the user set a size
+window.addEventListener('resize', () => {
+  if (localStorage.getItem('trapmap_marker_px') !== null) return;
+  const el = document.getElementById('marker-size');
+  if (el) el.value = getMarkerSize();
+  applyMarkerSize();
+});
 
 function addMarker(node) {
   const marker = L.marker([node.lat, node.lng], {
@@ -582,6 +619,79 @@ function hideLoadingOverlay() {
   if (el) el.classList.add('hidden');
 }
 
+// Resolve duplicate trap IDs: keep the first occurrence under its original ID.
+// A later duplicate at the SAME position is a harmless accidental repeat and
+// is dropped. A later duplicate at a DIFFERENT position is real data (someone
+// placed a new trap and it collided with an existing ID) — give it a fresh,
+// unused ID instead of losing it. Returns the resolved list plus a list of
+// fixes so the caller can persist them back to the sheet.
+function resolveDuplicates(list) {
+  const groups = new Map();
+  list.forEach(n => {
+    if (!groups.has(n.id)) groups.set(n.id, []);
+    groups.get(n.id).push(n);
+  });
+
+  const usedIds = new Set(list.map(n => n.id));
+  let nextCandidate = 1;  // fill the lowest open ID first (e.g. reuse a gap left by a deleted trap)
+  function allocateId() {
+    while (usedIds.has(nextCandidate)) nextCandidate++;
+    usedIds.add(nextCandidate);
+    return nextCandidate;
+  }
+
+  const resolved = [];
+  const fixes = [];  // { staleId, renamedTo? }  — staleId's row must be removed from the sheet
+
+  groups.forEach((entries, id) => {
+    resolved.push(entries[0]);  // canonical: first occurrence keeps its ID
+    for (let i = 1; i < entries.length; i++) {
+      const dup = entries[i];
+      const samePos = Math.abs(dup.lat - entries[0].lat) < 0.01 && Math.abs(dup.lng - entries[0].lng) < 0.01;
+      if (samePos) {
+        fixes.push({ staleId: id });  // exact repeat, nothing to keep
+      } else {
+        const newId = allocateId();
+        const renamed = { ...dup, id: newId };
+        resolved.push(renamed);
+        fixes.push({ staleId: id, renamedTo: renamed });
+      }
+    }
+  });
+
+  return { resolved, fixes };
+}
+
+// Ask the server to atomically replace a stale duplicate row's ID with a new
+// one (delete + insert happen in a single locked Apps Script execution, so a
+// second request can't land in between and see a half-finished state).
+async function renameNode(oldId, node) {
+  if (!scriptUrl) return;
+  const params = new URLSearchParams({
+    action: 'rename',
+    oldId: oldId,
+    id: node.id,
+    intensity: INTENSITY_LEVELS.indexOf(normalizeIntensity(node.intensity)),
+    lat: node.lat,
+    lng: node.lng,
+    pin: getEditPin()
+  });
+  try {
+    await fetch(`${scriptUrl}?${params}`);
+  } catch(e) { /* CORS blocks response reading but write already happened */ }
+}
+
+// Write duplicate-resolution fixes back to the sheet: a real duplicate
+// (different position) gets renamed atomically via renameNode; an exact
+// accidental repeat (same position) just gets its stale row deleted.
+async function persistDuplicateFixes(fixes) {
+  if (!getEditPin()) return;  // not authenticated yet — try again on a later load
+  for (const f of fixes) {
+    if (f.renamedTo) await renameNode(f.staleId, f.renamedTo);
+    else await deleteNode(f.staleId);
+  }
+}
+
 async function fetchNodes() {
   if (!scriptUrl) { toast('No Script URL configured', 'error'); hideLoadingOverlay(); return; }
   setSyncStatus('loading', 'Loading…');
@@ -590,7 +700,17 @@ async function fetchNodes() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-    nodes = data.map(n => ({ ...n, intensity: normalizeIntensity(n.intensity) }));
+    const mapped = data.map(n => ({ ...n, intensity: normalizeIntensity(n.intensity) }));
+    const { resolved, fixes } = resolveDuplicates(mapped);
+    nodes = resolved;
+    if (fixes.length) {
+      const renamedCount = fixes.filter(f => f.renamedTo).length;
+      const msg = renamedCount
+        ? `⚠ Fixed ${fixes.length} duplicate trap ID(s) — ${renamedCount} renumbered`
+        : `⚠ Removed ${fixes.length} duplicate trap ID(s)`;
+      toast(msg, '');
+      persistDuplicateFixes(fixes);
+    }
     renderAllMarkers();
     const now = new Date().toLocaleTimeString();
     setSyncStatus('ok', `Loaded at ${now}`);
@@ -667,20 +787,31 @@ if (scriptUrl) {
 // EDITOR PIN GATE
 // The PIN is validated server-side by Apps Script (action=auth), which
 // checks it against the EDIT_PIN Script Property. Nothing about the PIN
-// lives in this file or the public repo. On success the entered PIN is
-// kept in sessionStorage and attached to every save/delete, so writes are
-// also enforced server-side — not just the UI. The map loads behind the gate.
+// lives in this file or the public repo. On success the entered PIN and an
+// expiry timestamp are kept in localStorage (~30 days) so the same browser
+// isn't re-prompted every visit, and it's attached to every save/delete so
+// writes are also enforced server-side — not just the UI. The map loads
+// behind the gate regardless of lock state.
 // ─────────────────────────────────────────────
-function getEditPin() { return sessionStorage.getItem('trapmap_pin') || ''; }
+const PIN_REMEMBER_KEY = 'trapmap_pin_auth';
+const PIN_REMEMBER_MS  = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function getEditPin() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PIN_REMEMBER_KEY) || 'null');
+    if (saved && saved.expires > Date.now()) return saved.pin;
+  } catch (e) { /* ignore malformed value */ }
+  return '';
+}
 
 (function() {
-  const SESSION_KEY = 'trapmap_editor_unlocked';
   const gate  = document.getElementById('pin-gate');
   const input = document.getElementById('pin-input');
   const errEl = document.getElementById('pin-error');
 
   function unlock() { gate.classList.add('hidden'); }
-  if (sessionStorage.getItem(SESSION_KEY) === '1') { unlock(); return; }
+  if (getEditPin()) { unlock(); return; }
+  localStorage.removeItem(PIN_REMEMBER_KEY);  // clear any expired entry
 
   input.focus();
   let checking = false;
@@ -695,8 +826,7 @@ function getEditPin() { return sessionStorage.getItem('trapmap_pin') || ''; }
       const res = await fetch(`${scriptUrl}?action=auth&pin=${encodeURIComponent(val)}`);
       const data = await res.json();
       if (data.ok) {
-        sessionStorage.setItem(SESSION_KEY, '1');
-        sessionStorage.setItem('trapmap_pin', val);
+        localStorage.setItem(PIN_REMEMBER_KEY, JSON.stringify({ pin: val, expires: Date.now() + PIN_REMEMBER_MS }));
         unlock();
       } else {
         errEl.classList.remove('checking');

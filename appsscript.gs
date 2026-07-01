@@ -59,13 +59,31 @@ function doGet(e) {
       const lat       = parseFloat(e.parameter.lat);
       const lng       = parseFloat(e.parameter.lng);
       if (!id || isNaN(lat) || isNaN(lng)) return jsonResponse({ error: 'Invalid params' });
-      upsertNode(sheet, id, intensity, lat, lng);
+      withLock(() => upsertNode(sheet, id, intensity, lat, lng));
       return jsonResponse({ ok: true });
     }
     if (action === 'delete') {
       if (!isAuthorized(e)) return jsonResponse({ error: 'Unauthorized' });
       const id = parseInt(e.parameter.id);
-      deleteNode(sheet, id);
+      withLock(() => deleteNode(sheet, id));
+      return jsonResponse({ ok: true });
+    }
+    if (action === 'rename') {
+      // Atomically replace one row's ID with another (used to resolve
+      // duplicate trap IDs): removes the stale row and inserts the renamed
+      // one in a single locked execution so a second request can't read a
+      // half-finished state in between.
+      if (!isAuthorized(e)) return jsonResponse({ error: 'Unauthorized' });
+      const oldId     = parseInt(e.parameter.oldId);
+      const newId     = parseInt(e.parameter.id);
+      const intensity = intensityToNum(e.parameter.intensity);
+      const lat       = parseFloat(e.parameter.lat);
+      const lng       = parseFloat(e.parameter.lng);
+      if (!oldId || !newId || isNaN(lat) || isNaN(lng)) return jsonResponse({ error: 'Invalid params' });
+      withLock(() => {
+        deleteNode(sheet, oldId);
+        upsertNode(sheet, newId, intensity, lat, lng);
+      });
       return jsonResponse({ ok: true });
     }
     return jsonResponse({ error: 'Unknown action' });
@@ -144,6 +162,14 @@ function deleteNode(sheet, id) {
       return;
     }
   }
+}
+
+// Serializes writes so two near-simultaneous requests (e.g. a rename's
+// delete+insert) can't interleave and read a half-finished sheet state.
+function withLock(fn) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try { fn(); } finally { lock.releaseLock(); }
 }
 
 function jsonResponse(obj) {
